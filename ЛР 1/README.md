@@ -164,6 +164,48 @@ CREATE TABLE `simpledb`.`resume` (
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8;
 ```
+При использовании опции **ON DELETE CASCADE**, СУБД обеспечивает автоматическую очистку зависимых данных. При удалении учетной записи пользователя все связанные с ним резюме будут удалены системой самостоятельно, что гарантирует ссылочную целостность базы данных
 
+## Задание 9
+Структура базы данных позволяет реализовать связь "один ко многим" между пользователями и их резюме. Это означает, что один пользователь может иметь как **ноль** резюме (минимальное значение), так и **неограниченное количество** (максимальное значение), создавая разные профили компетенций под различные профессиональные цели
+
+```SQL
+INSERT INTO `simpledb`.`resume` (`resumeid`, `userid`, `title`, `skills`, `created`) 
+VALUES (1, 1, 'Backend Developer', 'Python, MySQL, Django', '2026-02-13 12:29:41');
+INSERT INTO `simpledb`.`resume` (`resumeid`, `userid`, `title`, `skills`, `created`) 
+VALUES (2, 1, 'System Administrator', 'Linux, Networking, Bash', '2026-02-13 12:29:41');
+INSERT INTO `simpledb`.`resume` (`resumeid`, `userid`, `title`, `skills`, `created`) 
+VALUES (3, 2, 'Project Manager', 'Agile, Scrum, Team Management', '2026-02-13 12:29:41');
+INSERT INTO `simpledb`.`resume` (`resumeid`, `userid`, `title`, `skills`, `created`) 
+VALUES (4, 4, 'UI/UX Designer', 'Figma, Adobe XD, CSS', '2026-02-13 12:29:41');
+```
+
+Была предпринята попытка добавить резюме для пользователя с несуществующим идентификатором (userid = 10). СУБД заблокировала транзакцию, вернув ошибку 1452. Это доказывает эффективность использования внешних ключей для поддержания ссылочной целостности: система физически не позволяет создать запись в дочерней таблице, если для неё нет соответствующей записи в родительской таблице
+
+```SQL
+Operation failed: There was an error while applying the SQL script to the database.
+Executing:
+INSERT INTO `simpledb`.`resume` (`resumeid`, `userid`, `title`, `skills`) VALUES ('5', '10', 'zxc', 'zxc');
+
+ERROR 1452: 1452: Cannot add or update a child row: a foreign key constraint fails (`simpledb`.`resume`, CONSTRAINT `userid` FOREIGN KEY (`userid`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE)
+SQL Statement:
+INSERT INTO `simpledb`.`resume` (`resumeid`, `userid`, `title`, `skills`) VALUES ('5', '10', 'zxc', 'zxc')
+```
+## Задание 10
+1. Удаление пользователей из таблицы `users`
+```SQL
+DELETE FROM `simpledb`.`users` WHERE (`id` = '1');
+DELETE FROM `simpledb`.`users` WHERE (`id` = '2');
+```
+При удалении родительской записи (пользователя) механизм каскадного удаления очищает дочернюю таблицу от связанных данных, предотвращая появление "записей-сирот" и поддерживая целостность базы данных
+
+2. Изменение ID пользователя (Update)
+```SQL
+UPDATE `simpledb`.`users` SET `id` = '40' WHERE (`id` = '4');
+```
+В силу правила **`ON UPDATE CASCADE`**:
+1. СУБД не выдаст ошибку нарушения связи.
+2. В таблице `resume` значение в столбце `userid` для всех резюме Екатерины **автоматически изменится** с 4 на 40.
+3. Связь между объектами сохранится, несмотря на смену первичного ключа.
 ## Информация о студенте
 Иванов Федор Владиславович, 2 курс, ИВТ-1.2
